@@ -1,23 +1,15 @@
-if (Meteor.isClient) {
-  // counter starts at 0
-  Session.setDefault("counter", 0);
 
-  Template.hello.helpers({
-    counter: function () {
-      return Session.get("counter");
-    }
-  });
+var conf = JSON.parse(Assets.getText('twitter.json'));
 
-  Template.hello.events({
-    'click button': function () {
-      // increment the counter when button is clicked
-      Session.set("counter", Session.get("counter") + 1);
-    }
-  });
-}
+var Twit = new TwitMaker({
+    consumer_key:         conf.consumer.key,
+    consumer_secret:      conf.consumer.secret,
+    access_token:         conf.access_token.key,
+    access_token_secret:  conf.access_token.secret
+});
 
-if (Meteor.isServer) {
-  Meteor.startup(function () {
-    // code to run on server at startup
-  });
-}
+var stream = Twit.stream('statuses/sample');
+
+stream.on('tweet', function(tweet){
+  console.log(tweet);
+});
