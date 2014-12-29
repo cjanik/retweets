@@ -9,7 +9,7 @@ var min = 10000,
 
 twitterStream.on('tweet', function(id, rtID, text, rt) {
 		
-	if(Retweets.find().count() < 50){
+	if(Retweets.find().count() < 30){
 		var isDuplicate = Retweets.findOne({rtID: rtID});
 		if( isDuplicate){
 			Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
@@ -98,7 +98,7 @@ Template.barChart.rendered = function(){
 			.append("rect")
 			.attr("x", w)
 			.attr("y", function(d) {
-				return h - yScale(d.retweetCount);
+				return h + 50 - yScale(d.retweetCount);
 			})
 			.attr("width", xScale.rangeBand())
 			.attr("height", function(d) {
@@ -121,7 +121,7 @@ Template.barChart.rendered = function(){
 				return xScale(i);
 			})
 			.attr("y", function(d) {
-				return h - yScale(d.retweetCount);
+				return h + 50 - yScale(d.retweetCount);
 			})
 			.attr("width", xScale.rangeBand())
 			.attr("height", function(d) {
@@ -154,10 +154,10 @@ Template.barChart.rendered = function(){
 			.attr("text-anchor", "middle")
 			.attr("x", w)
 			.attr("y", function(d) {
-				return h - yScale(d.retweetCount) - 100;
+				return h - yScale(d.retweetCount) - 50;
 			})						
 		   .attr("font-family", "sans-serif")
-		   .attr("font-size", "22px")
+		   .attr("font-size", "18px")
 		   .attr("fill", "#0F0F0F");
 
 		//Update…
@@ -169,7 +169,7 @@ Template.barChart.rendered = function(){
 			.attr("x", function(d, i) {
 				return xScale(i) + xScale.rangeBand() / 2;
 			}).attr("y", function(d) {
-				return h - yScale(d.retweetCount) - 12;
+				return h - yScale(d.retweetCount) + 48;
 			}).text(function(d) {
 				return d.retweetCount;
 			});
