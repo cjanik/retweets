@@ -1,15 +1,64 @@
-var Retweets = new Mongo.Collection('retweets');
+var Retweets = new Mongo.Collection(null);
 
-var wait = function(){
-    if(Retweets.find({}).count() === 0){
-        Meteor.setTimeout(wait, 1000);
-    }
-};
+twitterStream = new Meteor.Stream('twitterStream');
+
+var retweets = tweetIDs = [];
+
+var min = 10000,
+	minIndex = 0;
+
+twitterStream.on('tweet', function(id, rtID, text, rt) {
+		
+	if(Retweets.find().count() < 50){
+		var isDuplicate = Retweets.findOne({rtID: rtID});
+		if( isDuplicate){
+			Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
+		} else {
+			Retweets.insert({
+				_id: id,
+				rtID: rtID,
+				text: text,
+				retweetCount: rt
+			});
+		}
+		
+		if( rt < min){
+			min = rt;
+			minIndex = id;
+		}
+		console.log('min first 50:',min);
+	} else if(rt > min){
+		Retweets.remove({_id: minIndex});
+		
+		var isDuplicate = Retweets.findOne({rtID: rtID});
+		
+		if(isDuplicate){
+			Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
+		} else {
+			Retweets.insert({
+				_id: id,
+				rtID: rtID,
+				text: text,
+				retweetCount: rt
+			});
+
+		}
+		
+		
+		var minDoc = Retweets.findOne({}, {sort: {retweetCount: 1}});
+		console.log('mindoc:', minDoc);
+		min = minDoc.retweetCount;
+		minIndex = minDoc._id;
+		console.log('min after 50:',min);
+	}
+	
+	console.log(id, rtID, text, rt);
+  });
 
 Template.barChart.rendered = function(){
 	//Width and height
-	var w = 600;
-	var h = 250;
+	var w = 1000;
+	var h = 500;
 	
 	var xScale = d3.scale.ordinal()
 					.rangeRoundBands([0, w], 0.05);
@@ -25,7 +74,7 @@ Template.barChart.rendered = function(){
 	//Create SVG element
 	var svg = d3.select("#barChart")
 				.attr("width", w)
-				.attr("height", h);
+				.attr("height", (h + 100));
 
 	this.autorun(function(){
 		//var modifier = {fields:{value:1}};
@@ -33,11 +82,12 @@ Template.barChart.rendered = function(){
 		//if(sortModifier && sortModifier.sort)
 		//	modifier.sort = sortModifier.sort;
 		
-		var dataset = Retweets.find({retweetCount: {$gt: 1000}}, {fields: {_id: 0, retweetCount: 1}}).fetch();
-
+		//var dataset = _.pluck(Retweets.find({}, {retweetCount: 1}).fetch(), 'retweetCount');
+		var dataset = Retweets.find({}, {retweetCount: 1}).fetch();
+		console.log('dataset:',dataset);
 		//Update scale domains
 		xScale.domain(d3.range(dataset.length));
-		yScale.domain([0, d3.max(dataset, function(d) { return d.value; })]);
+		yScale.domain([0, d3.max(dataset, function(d) { return d.retweetCount; })]);
 
 		//Select…
 		var bars = svg.selectAll("rect")
@@ -48,14 +98,14 @@ Template.barChart.rendered = function(){
 			.append("rect")
 			.attr("x", w)
 			.attr("y", function(d) {
-				return h - yScale(d.value);
+				return h - yScale(d.retweetCount);
 			})
 			.attr("width", xScale.rangeBand())
 			.attr("height", function(d) {
-				return yScale(d.value);
+				return yScale(d.retweetCount);
 			})
 			.attr("fill", function(d) {
-				return "rgb(0, 0, " + (d.value * 10) + ")";
+				return "rgb(0, 0, " + (d.retweetCount * 10) + ")";
 			})
 			.attr("data-id", function(d){
 				return d._id;
@@ -71,13 +121,13 @@ Template.barChart.rendered = function(){
 				return xScale(i);
 			})
 			.attr("y", function(d) {
-				return h - yScale(d.value);
+				return h - yScale(d.retweetCount);
 			})
 			.attr("width", xScale.rangeBand())
 			.attr("height", function(d) {
-				return yScale(d.value);
+				return yScale(d.retweetCount);
 			}).attr("fill", function(d) {
-				return "rgb(0, 0, " + (d.value * 10) + ")";
+				return "rgb(0, 0, " + (d.retweetCount * 10) + ")";
 			});
 
 		//Exit…
@@ -99,16 +149,16 @@ Template.barChart.rendered = function(){
 		labels.enter()
 			.append("text")
 			.text(function(d) {
-				return d.value;
+				return d.retweetCount;
 			})
 			.attr("text-anchor", "middle")
 			.attr("x", w)
 			.attr("y", function(d) {
-				return h - yScale(d.value) + 14;
+				return h - yScale(d.retweetCount) - 100;
 			})						
 		   .attr("font-family", "sans-serif")
-		   .attr("font-size", "11px")
-		   .attr("fill", "white");
+		   .attr("font-size", "22px")
+		   .attr("fill", "#0F0F0F");
 
 		//Update…
 		labels.transition()
@@ -119,9 +169,9 @@ Template.barChart.rendered = function(){
 			.attr("x", function(d, i) {
 				return xScale(i) + xScale.rangeBand() / 2;
 			}).attr("y", function(d) {
-				return h - yScale(d.value) + 14;
+				return h - yScale(d.retweetCount) - 12;
 			}).text(function(d) {
-				return d.value;
+				return d.retweetCount;
 			});
 
 		//Exit…

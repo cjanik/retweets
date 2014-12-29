@@ -10,35 +10,22 @@ var Twit = new TwitMaker({
     access_token_secret:  conf.access_token.secret
 });
 
-Meteor.methods({
-  twitterStream: function(options){
-    var streamAsync = Meteor.wrapAsync(Twit.stream, Twit);
-    var result = streamAsync(options);
-    return result;
+var stream = Twit.stream('statuses/filter',{track: 'words', language: 'en'});
+
+var twitterStream = new Meteor.Stream('twitterStream');
+
+twitterStream.permissions.write(function(eventName) {
+  return false;
+});
+
+twitterStream.permissions.read(function(eventName) {
+  return true;
+});
+
+stream.on('tweet', function(twt){
+  if(twt.retweeted_status){
+    //console.log(twt);
+    twitterStream.emit('tweet', twt.id_str, twt.retweeted_status.id_str, twt.text, twt.retweeted_status.retweet_count);
   }
 });
 
-var stream = Meteor.call( 'twitterStream', 'statuses/sample');
-
-  
-  stream.on('tweet', function(twt){
-  
-  var min = 1,
-    max;
-  
-  if(twt.retweeted_status && twt.retweeted_status.retweet_count > min){
-    
-  //  if( Retweets.findOne({_id: twt.id_str}) ) {
-  //    Retweets.update({_id: twt.id_str},{text: twt.text, retweetCount: twt.retweeted_status.retweet_count});
-  //  } else {
-      Retweets.insert({
-        _id: twt.id_str,
-        text: twt.text,
-        retweetCount: twt.retweeted_status.retweet_count
-      });
-  //  }
-    
-    
-    console.log('tweet:', twt['text'], 'retweets:', twt.retweeted_status.retweet_count);
-  }
-});
