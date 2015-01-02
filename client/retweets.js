@@ -7,16 +7,16 @@ var retweets = tweetIDs = [];
 var min = 10000,
 	minIndex = 0;
 
-twitterStream.on('tweet', function(id, rtID, text, rt) {
+twitterStream.on('tweet', function(id, tweetID, text, rt) {
 		
 	if(Retweets.find().count() < 30){
-		var isDuplicate = Retweets.findOne({rtID: rtID});
+		var isDuplicate = Retweets.findOne({tweetID: tweetID});
 		if( isDuplicate){
 			Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
 		} else {
 			Retweets.insert({
 				_id: id,
-				rtID: rtID,
+				tweetID: tweetID,
 				text: text,
 				retweetCount: rt
 			});
@@ -30,14 +30,14 @@ twitterStream.on('tweet', function(id, rtID, text, rt) {
 	} else if(rt > min){
 		Retweets.remove({_id: minIndex});
 		
-		var isDuplicate = Retweets.findOne({rtID: rtID});
+		var isDuplicate = Retweets.findOne({tweetID: tweetID});
 		
 		if(isDuplicate){
 			Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
 		} else {
 			Retweets.insert({
 				_id: id,
-				rtID: rtID,
+				tweetID: tweetID,
 				text: text,
 				retweetCount: rt
 			});
@@ -52,7 +52,7 @@ twitterStream.on('tweet', function(id, rtID, text, rt) {
 		console.log('min after 50:',min);
 	}
 	
-	console.log(id, rtID, text, rt);
+	console.log(id, tweetID, text, rt);
   });
 
 Template.barChart.rendered = function(){
