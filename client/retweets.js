@@ -1,8 +1,31 @@
-var Retweets = new Mongo.Collection(null);
-
-twitterStream = new Meteor.Stream('twitterStream');
-
-var retweets = tweetIDs = [];
+var Retweets = new Mongo.Collection(null),
+	twitterStream = new Meteor.Stream('twitterStream');
+	
+Template.body.events({
+	"submit .input-params": function(event){
+		var track = event.target.track.value;
+		console.log('input: ', track);
+		
+		Retweets.remove({});
+		Meteor.call('stopStream', function(error){
+			if(error){
+				console.log(error);
+			}
+		});
+		
+		Meteor.call('startStream', track, 'en', function(error, result){
+			if(error){
+				console.log(error);
+			} else if(result){
+				console.log(result);
+			}
+		});
+		
+		event.target.track.value = '';
+		
+		return false;
+	}
+});
 
 var min = 10000,
 	minIndex = 0;
@@ -26,7 +49,7 @@ twitterStream.on('tweet', function(id, tweetID, text, rt) {
 			min = rt;
 			minIndex = id;
 		}
-		console.log('min first 50:',min);
+		//console.log('min first 50:',min);
 	} else if(rt > min){
 		Retweets.remove({_id: minIndex});
 		
@@ -46,10 +69,10 @@ twitterStream.on('tweet', function(id, tweetID, text, rt) {
 		
 		
 		var minDoc = Retweets.findOne({}, {sort: {retweetCount: 1}});
-		console.log('mindoc:', minDoc);
+
 		min = minDoc.retweetCount;
 		minIndex = minDoc._id;
-		console.log('min after 50:',min);
+
 	}
 	
 	console.log(id, tweetID, text, rt);
@@ -57,8 +80,8 @@ twitterStream.on('tweet', function(id, tweetID, text, rt) {
 
 Template.barChart.rendered = function(){
 	//Width and height
-	var w = 1000;
-	var h = 500;
+	var w = 800;
+	var h = 400;
 	
 	var xScale = d3.scale.ordinal()
 					.rangeRoundBands([0, w], 0.05);
@@ -74,7 +97,7 @@ Template.barChart.rendered = function(){
 	//Create SVG element
 	var svg = d3.select("#barChart")
 				.attr("width", w)
-				.attr("height", (h + 100));
+				.attr("height", (h + 80));
 
 	this.autorun(function(){
 		//var modifier = {fields:{value:1}};
