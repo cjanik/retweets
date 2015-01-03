@@ -4,6 +4,8 @@ var Retweets = new Mongo.Collection(null),
 Template.body.events({
 	"submit .input-params": function(event){
 		
+		event.preventDefault();
+		
 		var input = event.target.track.value;
 		console.log('input: ', input);
 		
@@ -14,7 +16,7 @@ Template.body.events({
 		});
 
 		Retweets.remove({});
-		console.log('Retweets', Retweets.find({}).fetch());
+		//console.log('Retweets', Retweets.find({}).fetch());
 		
 		Meteor.call('startStream', input, 'en', function(error, result){
 			if(error){
@@ -26,7 +28,7 @@ Template.body.events({
 		
 		event.target.track.value = '';
 		
-		Template.$('#tweet-view').html('');
+		$('#tweet-view').html('click a bar to see the tweet');
 		
 		return false;
 	}
@@ -54,8 +56,9 @@ twitterStream.on('tweet', function(id, tweetID, text, rt) {
 			min = rt;
 			minIndex = id;
 		}
-		//console.log('min first 50:',min);
+
 	} else if(rt > min){
+		
 		Retweets.remove({_id: minIndex});
 		
 		var isDuplicate = Retweets.findOne({tweetID: tweetID});
