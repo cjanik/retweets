@@ -3,6 +3,7 @@
 </head>
 
 <body>
+
   <header>
     <div class="ui dividing header">
       <div class="content">
@@ -12,14 +13,18 @@
     </div>
     <div class="ui input">
       <form class="input-params">
-        <p>Enter search term: <input type="text" name="track" placeholder="words"></p>
+        Enter search term: <input type="text" name="track" placeholder="words">
       </form>
     </div>
   </header>
+  
+  <div id="tweet-view" class="ui secondary segment">click a bar to see the tweet</div>
   {{> barChart}}
+  
 </body>
 
 <template name="barChart">
     <svg id="barChart">
     </svg>
+    
 </template>

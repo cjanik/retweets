@@ -3,17 +3,20 @@ var Retweets = new Mongo.Collection(null),
 	
 Template.body.events({
 	"submit .input-params": function(event){
-		var track = event.target.track.value;
-		console.log('input: ', track);
 		
-		Retweets.remove({});
+		var input = event.target.track.value;
+		console.log('input: ', input);
+		
 		Meteor.call('stopStream', function(error){
 			if(error){
 				console.log(error);
 			}
 		});
+
+		Retweets.remove({});
+		console.log('Retweets', Retweets.find({}).fetch());
 		
-		Meteor.call('startStream', track, 'en', function(error, result){
+		Meteor.call('startStream', input, 'en', function(error, result){
 			if(error){
 				console.log(error);
 			} else if(result){
@@ -22,6 +25,8 @@ Template.body.events({
 		});
 		
 		event.target.track.value = '';
+		
+		Template.$('#tweet-view').html('');
 		
 		return false;
 	}
@@ -67,7 +72,6 @@ twitterStream.on('tweet', function(id, tweetID, text, rt) {
 
 		}
 		
-		
 		var minDoc = Retweets.findOne({}, {sort: {retweetCount: 1}});
 
 		min = minDoc.retweetCount;
@@ -76,7 +80,10 @@ twitterStream.on('tweet', function(id, tweetID, text, rt) {
 	}
 	
 	console.log(id, tweetID, text, rt);
-  });
+		//$('#copy, body').append('<h1>'+ dataset[0].text + '</h1>');
+
+	
+});
 
 Template.barChart.rendered = function(){
 	//Width and height
@@ -108,6 +115,9 @@ Template.barChart.rendered = function(){
 		//var dataset = _.pluck(Retweets.find({}, {retweetCount: 1}).fetch(), 'retweetCount');
 		var dataset = Retweets.find({}, {retweetCount: 1}).fetch();
 		console.log('dataset:',dataset);
+		
+	
+		
 		//Update scale domains
 		xScale.domain(d3.range(dataset.length));
 		yScale.domain([0, d3.max(dataset, function(d) { return d.retweetCount; })]);
@@ -132,6 +142,9 @@ Template.barChart.rendered = function(){
 			})
 			.attr("data-id", function(d){
 				return d._id;
+			})
+			.on("click", function(d){
+				d3.select('#tweet-view').html(d.text);
 			});
 
 		//Update…
@@ -204,5 +217,13 @@ Template.barChart.rendered = function(){
 			.attr("x", -xScale.rangeBand())
 			.remove();
 
+	});
+};
+
+Template.barChart.destroyed = function(){
+	Meteor.call('stopStream', function(error){
+		if(error){
+			console.log(error);
+		}
 	});
 };
