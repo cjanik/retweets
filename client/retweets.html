@@ -3,11 +3,18 @@
 </head>
 
 <body>
-  <header><h1>See what's trending on Twitter in real time</h1>
-    <h2>the most retweeted tweets will accumulate in the bar chart</h2>
-    <form class="input-params">
-      <p>Enter search term: <input type="text" name="track" placeholder="words"></p>
-    </form>
+  <header>
+    <div class="ui dividing header">
+      <div class="content">
+      See what's trending on Twitter in real time
+      <div class="sub header">The most retweeted tweets will accumulate in the bar chart</div>
+      </div>
+    </div>
+    <div class="ui input">
+      <form class="input-params">
+        <p>Enter search term: <input type="text" name="track" placeholder="words"></p>
+      </form>
+    </div>
   </header>
   {{> barChart}}
 </body>
