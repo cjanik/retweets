@@ -15,3 +15,6 @@ text {
     color: black;
 }
 
+#tweet-view {
+    height: 200px;
+}

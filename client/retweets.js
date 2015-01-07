@@ -35,11 +35,24 @@ Template.body.events({
 });
 
 var min = 10000,
-	minIndex = 0;
+	minIndex = 0,
+	numBars = 20;
+	
+function removeMin(numToRemove){
+	for(var i = 0; i<numToRemove; i++){
+		Retweets.remove({_id: minIndex});
+	
+		var minDoc = Retweets.findOne({}, {sort: {retweetCount: 1}});
+
+		min = minDoc.retweetCount;
+		minIndex = minDoc._id;
+	};
+	return true;
+};
 
 twitterStream.on('tweet', function(id, tweetID, text, rt) {
 		
-	if(Retweets.find().count() < 30){
+	if(Retweets.find().count() < numBars){
 		var isDuplicate = Retweets.findOne({tweetID: tweetID});
 		if( isDuplicate){
 			Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
@@ -59,8 +72,8 @@ twitterStream.on('tweet', function(id, tweetID, text, rt) {
 
 	} else if(rt > min){
 		
-		Retweets.remove({_id: minIndex});
-		
+		removeMin(1);
+
 		var isDuplicate = Retweets.findOne({tweetID: tweetID});
 		
 		if(isDuplicate){
@@ -74,18 +87,11 @@ twitterStream.on('tweet', function(id, tweetID, text, rt) {
 			});
 
 		}
-		
-		var minDoc = Retweets.findOne({}, {sort: {retweetCount: 1}});
-
-		min = minDoc.retweetCount;
-		minIndex = minDoc._id;
 
 	}
 	
 	console.log(id, tweetID, text, rt);
 		//$('#copy, body').append('<h1>'+ dataset[0].text + '</h1>');
-
-	
 });
 
 Template.barChart.rendered = function(){
@@ -104,10 +110,39 @@ Template.barChart.rendered = function(){
 		return d._id;
 	};
 	
+	function responsivefy(svg) {
+    // get container + svg aspect ratio
+    var container = d3.select(svg.node().parentNode),
+        width = parseInt(svg.style("width")),
+        height = parseInt(svg.style("height")),
+        aspect = width / height;
+        numBars
+
+    // add viewBox and preserveAspectRatio properties,
+    // and call resize so that svg resizes on inital page load
+    svg.attr("viewBox", "0 0 " + width + " " + height)
+        .attr("perserveAspectRatio", "xMinYMid")
+        .call(resize);
+
+    // to register multiple listeners for same event type, 
+    // you need to add namespace, i.e., 'click.foo'
+    // necessary if you call invoke this function for multiple svgs
+    // api docs: https://github.com/mbostock/d3/wiki/Selections#on
+    d3.select(window).on("resize." + container.attr("id"), resize);
+
+    // get width of container and resize svg to fit it
+    function resize() {
+        var targetWidth = parseInt(container.style("width"));
+        svg.attr("width", targetWidth);
+        svg.attr("height", Math.round(targetWidth / aspect));
+    }
+}
+	
 	//Create SVG element
 	var svg = d3.select("#barChart")
 				.attr("width", w)
-				.attr("height", (h + 80));
+				.attr("height", (h + 80))
+				.call(responsivefy);
 
 	this.autorun(function(){
 		//var modifier = {fields:{value:1}};
@@ -147,7 +182,9 @@ Template.barChart.rendered = function(){
 				return d._id;
 			})
 			.on("click", function(d){
-				d3.select('#tweet-view').html(d.text);
+				document.getElementById('tweet-view').innerHTML = "";
+				twttr.widgets.createTweet(d._id, document.getElementById('tweet-view'),{cards: 'hidden'});
+				//d3.select('#tweet-view').html(d.text);
 			});
 
 		//Update…
