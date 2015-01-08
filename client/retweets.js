@@ -28,7 +28,8 @@ Template.body.events({
 		
 		event.target.track.value = '';
 		
-		$('#tweet-view').html('click a bar to see the tweet');
+		document.getElementById('tweet-view').innerHTML =
+			"<p>not seeing much? someone is bound to tweet about it eventually!</p><p>click a bar to see the tweet</p>";
 		
 		return false;
 	}
@@ -169,7 +170,7 @@ Template.barChart.rendered = function(){
 			.append("rect")
 			.attr("x", w)
 			.attr("y", function(d) {
-				return h + 50 - yScale(d.retweetCount);
+				return h + 70 - yScale(d.retweetCount);
 			})
 			.attr("width", xScale.rangeBand())
 			.attr("height", function(d) {
@@ -197,7 +198,7 @@ Template.barChart.rendered = function(){
 				return xScale(i);
 			})
 			.attr("y", function(d) {
-				return h + 50 - yScale(d.retweetCount);
+				return h + 70 - yScale(d.retweetCount);
 			})
 			.attr("width", xScale.rangeBand())
 			.attr("height", function(d) {
@@ -227,10 +228,11 @@ Template.barChart.rendered = function(){
 			.text(function(d) {
 				return d.retweetCount;
 			})
-			.attr("text-anchor", "middle")
+			.attr("text-anchor", "end")
+			.style("writing-mode", "tb")
 			.attr("x", w)
 			.attr("y", function(d) {
-				return h - yScale(d.retweetCount) - 50;
+				return h - yScale(d.retweetCount) - 100;
 			})						
 		   .attr("font-family", "sans-serif")
 		   .attr("font-size", "18px")
@@ -238,7 +240,6 @@ Template.barChart.rendered = function(){
 		   .on("click", function(d){
 				document.getElementById('tweet-view').innerHTML = "";
 				twttr.widgets.createTweet(d._id, document.getElementById('tweet-view'));
-				//d3.select('#tweet-view').html(d.text);
 			});
 
 		//Update…
@@ -250,7 +251,7 @@ Template.barChart.rendered = function(){
 			.attr("x", function(d, i) {
 				return xScale(i) + xScale.rangeBand() / 2;
 			}).attr("y", function(d) {
-				return h - yScale(d.retweetCount) + 48;
+				return h - yScale(d.retweetCount) + 75;
 			}).text(function(d) {
 				return d.retweetCount;
 			});
