@@ -36,7 +36,7 @@ Template.body.events({
 
 var min = 10000,
 	minIndex = 0,
-	numBars = 20;
+	numBars = 15;
 	
 function removeMin(numToRemove){
 	for(var i = 0; i<numToRemove; i++){
@@ -96,8 +96,8 @@ twitterStream.on('tweet', function(id, tweetID, text, rt) {
 
 Template.barChart.rendered = function(){
 	//Width and height
-	var w = 800;
-	var h = 400;
+	var w = 500;
+	var h = 300;
 	
 	var xScale = d3.scale.ordinal()
 					.rangeRoundBands([0, w], 0.05);
@@ -116,7 +116,6 @@ Template.barChart.rendered = function(){
         width = parseInt(svg.style("width")),
         height = parseInt(svg.style("height")),
         aspect = width / height;
-        numBars
 
     // add viewBox and preserveAspectRatio properties,
     // and call resize so that svg resizes on inital page load
@@ -133,6 +132,7 @@ Template.barChart.rendered = function(){
     // get width of container and resize svg to fit it
     function resize() {
         var targetWidth = parseInt(container.style("width"));
+        targetWidth = targetWidth > 500 ? 500 : targetWidth;
         svg.attr("width", targetWidth);
         svg.attr("height", Math.round(targetWidth / aspect));
     }
@@ -183,7 +183,7 @@ Template.barChart.rendered = function(){
 			})
 			.on("click", function(d){
 				document.getElementById('tweet-view').innerHTML = "";
-				twttr.widgets.createTweet(d._id, document.getElementById('tweet-view'),{cards: 'hidden'});
+				twttr.widgets.createTweet(d._id, document.getElementById('tweet-view'));
 				//d3.select('#tweet-view').html(d.text);
 			});
 
@@ -234,7 +234,12 @@ Template.barChart.rendered = function(){
 			})						
 		   .attr("font-family", "sans-serif")
 		   .attr("font-size", "18px")
-		   .attr("fill", "#0F0F0F");
+		   .attr("fill", "#0F0F0F")
+		   .on("click", function(d){
+				document.getElementById('tweet-view').innerHTML = "";
+				twttr.widgets.createTweet(d._id, document.getElementById('tweet-view'));
+				//d3.select('#tweet-view').html(d.text);
+			});
 
 		//Update…
 		labels.transition()

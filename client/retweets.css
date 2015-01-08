@@ -3,6 +3,10 @@ body {
     margin: 10px 25px;
 }
 
+header {
+    width: 500px;
+}
+
 a {
     color: #009FDA;
     text-decoration: none;
@@ -13,8 +17,4 @@ a:hover {
 
 text {
     color: black;
-}
-
-#tweet-view {
-    height: 200px;
 }

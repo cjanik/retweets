@@ -14,7 +14,10 @@
 </head>
 
 <body>
-
+    <div class="ui grid">
+    <div class="doubling two column row">
+      <div class="column">
+        
   <header>
     <div class="ui dividing header">
       <div class="content">
@@ -28,10 +31,16 @@
       </form>
     </div>
   </header>
-  
-  <div id="tweet-view">click a bar to see the tweet</div>
-  {{> barChart}}
-  
+
+
+        {{> barChart}}
+      </div>
+      <div class="column">
+        <div id="tweet-view">click a bar to see the tweet</div>
+      </div>
+   </div>
+  </div>
+   
 </body>
 
 <template name="barChart">
