@@ -9,4 +9,4 @@ client builds a collection of the most popular tweets in real time, updating the
 
 d3 builds a bar chart on the reactive collection.
 
-see a demo at [a link](http://retweets.meteor.com)
+see a demo at [retweets.meteor.com](http://retweets.meteor.com)
