@@ -6,6 +6,9 @@
 
 meteor-platform
 nooitaf:semantic-ui
-mrt:twit
 d3js:d3
 lepozepo:streams
+meteorhacks:npm
+
+
+npm-container

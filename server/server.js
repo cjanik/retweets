@@ -1,7 +1,9 @@
 
 var conf = JSON.parse(Assets.getText('twitter.json'));
 
-var Twit = new TwitMaker({
+var TwitterStreamChannels = Meteor.npmRequire('twitter-stream-channels');
+
+var Twit = new TwitterStreamChannels({
     consumer_key:         conf.consumer.key,
     consumer_secret:      conf.consumer.secret,
     access_token:         conf.access_token.key,
@@ -22,10 +24,14 @@ twitterStream.permissions.read(function(eventName) {
 Meteor.methods({
   
   startStream: function(track, lang){
+    
+    var channels = {
+      'terms': ['california', 'hebdo']
+    }
   
-    stream = Twit.stream('statuses/filter', {track: track, language: lang} );
+    stream = Twit.streamChannels({track: channels, language: lang} );
   
-    stream.on('tweet', function(twt){
+    stream.on('channels/terms', function(twt){
       if(twt.retweeted_status){
         //console.log(twt);
         twitterStream.emit('tweet', twt.id_str, twt.retweeted_status.id_str, twt.text, twt.retweeted_status.retweet_count);
@@ -35,7 +41,7 @@ Meteor.methods({
   
   stopStream: function() {
     if(stream){
-     stream.stop();
+     stream.close();
     }
 
   }
