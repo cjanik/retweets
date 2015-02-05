@@ -1,5 +1,18 @@
 var Retweets = new Mongo.Collection(null),
-	twitterStream = new Meteor.Stream('twitterStream');
+	twitterStream = new Meteor.Stream('twitterStream'),
+	clientId;
+
+function generateUUID() {
+    var d = new Date().getTime();
+	var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = (d + Math.random()*16)%16 | 0;
+        d = Math.floor(d/16);
+        return (c=='x' ? r : (r&0x3|0x8)).toString(16);
+    });
+    return uuid;
+}
+
+var uuid = generateUUID();
 	
 Template.body.events({
 	"submit .input-params": function(event){
@@ -9,22 +22,26 @@ Template.body.events({
 		var input = event.target.track.value;
 		console.log('input: ', input);
 		
-		Meteor.call('stopStream', function(error){
-			if(error){
-				console.log(error);
-			}
-		});
+		//Meteor.call('stopStream', function(error){
+		//	if(error){
+		//		console.log(error);
+		//	}
+		//});
+
+		twitterStream.emit('unsubscribe');
 
 		Retweets.remove({});
 		//console.log('Retweets', Retweets.find({}).fetch());
 		
-		Meteor.call('startStream', input, 'en', function(error, result){
-			if(error){
-				console.log(error);
-			} else if(result){
-				console.log(result);
-			}
-		});
+		//Meteor.call('startStream', input, 'en', function(error, result){
+		//	if(error){
+		//		console.log(error);
+		//	} else if(result){
+		//		console.log(result);
+		//	}
+		//});
+
+		twitterStream.emit('subscribeClient', input, 'en', uuid);
 		
 		event.target.track.value = '';
 		
@@ -34,16 +51,6 @@ Template.body.events({
 		return false;
 	}
 });
-
-function generateUUID() {
-    var d = new Date().getTime();
-    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = (d + Math.random()*16)%16 | 0;
-        d = Math.floor(d/16);
-        return (c=='x' ? r : (r&0x3|0x8)).toString(16);
-    });
-    return uuid;
-};
 
 var min = 10000,
 	minIndex = 0,
@@ -61,7 +68,14 @@ function removeMin(numToRemove){
 	return true;
 };
 
-twitterStream.on(this.subscriptionId, function(id, tweetID, text, rt) {
+twitterStream.on('subscribed' + uuid, function(subscribedId){
+	clientId = subscribedId.toString();
+	console.log('subscribeClient: ', clientId);
+});
+
+twitterStream.on(clientId, function(id, tweetID, text, rt) {
+
+	console.log('subscriptionId: ', clientId);
 		
 	if(Retweets.find().count() < numBars){
 		var isDuplicate = Retweets.findOne({tweetID: tweetID});
@@ -277,9 +291,12 @@ Template.barChart.rendered = function(){
 };
 
 Template.barChart.destroyed = function(){
-	Meteor.call('stopStream', function(error){
-		if(error){
-			console.log(error);
-		}
-	});
+
+	twitterStream.emit('unsubscribe');
+
+	//Meteor.call('stopStream', function(error){
+	//	if(error){
+	//		console.log(error);
+	//	}
+	//});
 };

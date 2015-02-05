@@ -10,37 +10,57 @@ var Twit = new TwitterStreamChannels({
     access_token_secret:  conf.access_token.secret
 });
 
-var stream = null,
-  twitterStream = new Meteor.Stream('twitterStream'),
-  channels = {},
+var twitterStream = new Meteor.Stream('twitterStream'),
+  channels = {
+    'meteor': ['meteor']
+  },
   lastUpdated = Date.now(),
-  rateLimit = false;
+  rateLimit = false,
+  lang = 'en';
+
+var stream = Twit.streamChannels( {track: channels, language: lang} );
   
 twitterStream.permissions.write(function(eventName) {
-  return false;
+  //console.log('write eventName: ', eventName);
+  return eventName === 'subscribeClient' || eventName === 'unsubscribe';
 });
 
 twitterStream.permissions.read(function(eventName) {
-  return true;
+  //console.log('read eventName: ', eventName, ' this.subscriptionId: ', this.subscriptionId);
+  return this.subscriptionId === eventName || eventName.indexOf('subscribed') > -1;
 });
 
-twitterStream.on('client', function(track){
-
+twitterStream.on('unsubscribe', function(){
+  //console.log('unsubscribe: ', this.subscriptionId);
   var self = this;
+  delete channels[self.subscriptionId];
+});
 
-  addToTrack(self.subscriptionId, track);
+twitterStream.on('subscribeClient', function(track, language, tempId){
 
-  stream.on('channels/'+self.subscriptionId, function(twt){
-      if(twt.retweeted_status){
-        //console.log(twt);
-        twitterStream.emit(self.subscriptionId, twt.id_str, twt.retweeted_status.id_str, twt.text, twt.retweeted_status.retweet_count);
-      }
-    });
+  //console.log('subscribeClient: ', this.subscriptionId);
+
+  var subId = this.subscriptionId.toString();
+
+  twitterStream.emit('subscribed' + tempId, subId);
+
+  lang = language;
+
+  addToTrack(subId, track);
+
+  stream.on('channels/' + subId, function(twt){
+    if(twt.retweeted_status){
+      console.log(twt);
+      twitterStream.emit(subId, twt.id_str, twt.retweeted_status.id_str, twt.text, twt.retweeted_status.retweet_count);
+    }
+  });
 
 });
+
 
 function addToTrack(subscriber, track){
   channels[subscriber] = track;
+  console.log('channels: ', channels);
   updateTwit();
 }
 
@@ -61,15 +81,17 @@ function updateTwit(){
 
   if(!updated){
     Meteor.setTimeout(updateTwit, 5);
+  } else{
+    return true;
   }
 
 }
 
 Meteor.methods({
   
-  startStream: function(){
+ /* startStream: function(){
   
-    stream = Twit.streamChannels({track: channels, language: lang} );
+    
   
     stream.on('channels/', function(twt){
       if(twt.retweeted_status){
@@ -83,8 +105,12 @@ Meteor.methods({
         rateLimit = true;
       }
     });
+
+    stream.on('disconnect', function(data){
+      twitterStream.emit('disconnected', data);
+    });
   },
-  
+  */
   stopStream: function() {
     if(stream){
      stream.close();
