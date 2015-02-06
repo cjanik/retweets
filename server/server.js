@@ -59,7 +59,7 @@ twitterStream.on('subscribeClient', function(track, language, tempId){
 
 
 function addToTrack(subscriber, track){
-  channels[subscriber] = track;
+  channels[subscriber] = Array(track);
   console.log('channels: ', channels);
   updateTwit();
 }
