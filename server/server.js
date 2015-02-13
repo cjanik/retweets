@@ -10,39 +10,39 @@ var Twit = new TwitterStreamChannels({
     access_token_secret:  conf.access_token.secret
 });
 
-var twitterStream = new Meteor.Stream('twitterStream'),
-  channels = {
-    'meteor': ['meteor']
-  },
+var serverStream = new Meteor.Stream('clientStream'),
+  channels = {},
   lastUpdated = Date.now(),
   rateLimit = false,
   lang = 'en';
 
-var stream = Twit.streamChannels( {track: channels, language: lang} );
+//var stream = Twit.streamChannels( {track: channels, language: lang} );
   
-twitterStream.permissions.write(function(eventName) {
+serverStream.permissions.write(function(eventName) {
   //console.log('write eventName: ', eventName);
   return eventName === 'subscribeClient' || eventName === 'unsubscribe';
 });
 
-twitterStream.permissions.read(function(eventName) {
+serverStream.permissions.read(function(eventName) {
   //console.log('read eventName: ', eventName, ' this.subscriptionId: ', this.subscriptionId);
   return this.subscriptionId === eventName || eventName.indexOf('subscribed') > -1;
 });
 
-twitterStream.on('unsubscribe', function(){
+serverStream.on('unsubscribe', function(){
   //console.log('unsubscribe: ', this.subscriptionId);
   var self = this;
+  console.log('channels before: ', channels);
   delete channels[self.subscriptionId];
+  console.log('channels after: ', channels);
 });
 
-twitterStream.on('subscribeClient', function(track, language, tempId){
+serverStream.on('subscribeClient', function(track, language, tempId){
 
   //console.log('subscribeClient: ', this.subscriptionId);
 
   var subId = this.subscriptionId.toString();
 
-  twitterStream.emit('subscribed' + tempId, subId);
+  serverStream.emit('subscribed' + tempId, subId);
 
   lang = language;
 
@@ -50,8 +50,8 @@ twitterStream.on('subscribeClient', function(track, language, tempId){
 
   stream.on('channels/' + subId, function(twt){
     if(twt.retweeted_status){
-      console.log(twt);
-      twitterStream.emit(subId, twt.id_str, twt.retweeted_status.id_str, twt.text, twt.retweeted_status.retweet_count);
+      //console.log(twt);
+      serverStream.emit(subId, twt.id_str, twt.retweeted_status.id_str, twt.text, twt.retweeted_status.retweet_count);
     }
   });
 
@@ -68,12 +68,18 @@ function updateTwit(){
   var now = Date.now(),
     updated = false;
 
+  console.log('updateTwit');
+
   if(now - lastUpdated > 5 && rateLimit === false){
-    Meteor.call('startStream');
+    //Meteor.call('startStream');
+    stream = Twit.streamChannels( {track: channels, language: lang} );
+    console.log('updated, no rateLimit: ', now - lastUpdated);
     lastUpdated = now;
     updated = true;
   } else if(rateLimit === true && now - lastUpdated > 60){
-    Meteor.call('startStream');
+    //Meteor.call('startStream');
+    stream = Twit.streamChannels( {track: channels, language: lang} );
+    console.log('updated, after rateLimit', now - lastUpdated);
     lastUpdated = now;
     rateLimit = false;
     updated = true;
@@ -96,7 +102,7 @@ Meteor.methods({
     stream.on('channels/', function(twt){
       if(twt.retweeted_status){
         //console.log(twt);
-        twitterStream.emit('tweet', twt.id_str, twt.retweeted_status.id_str, twt.text, twt.retweeted_status.retweet_count);
+        clientStream.emit('tweet', twt.id_str, twt.retweeted_status.id_str, twt.text, twt.retweeted_status.retweet_count);
       }
     });
 
@@ -107,7 +113,7 @@ Meteor.methods({
     });
 
     stream.on('disconnect', function(data){
-      twitterStream.emit('disconnected', data);
+      clientStream.emit('disconnected', data);
     });
   },
   */

@@ -1,5 +1,5 @@
 var Retweets = new Mongo.Collection(null),
-	twitterStream = new Meteor.Stream('twitterStream'),
+	clientStream = new Meteor.Stream('clientStream'),
 	clientId;
 
 function generateUUID() {
@@ -28,7 +28,7 @@ Template.body.events({
 		//	}
 		//});
 
-		twitterStream.emit('unsubscribe');
+		clientStream.emit('unsubscribe');
 
 		Retweets.remove({});
 		//console.log('Retweets', Retweets.find({}).fetch());
@@ -41,7 +41,7 @@ Template.body.events({
 		//	}
 		//});
 
-		twitterStream.emit('subscribeClient', input, 'en', uuid);
+		clientStream.emit('subscribeClient', input, 'en', uuid);
 		
 		event.target.track.value = '';
 		
@@ -68,56 +68,105 @@ function removeMin(numToRemove){
 	return true;
 };
 
-twitterStream.on('subscribed' + uuid, function(subscribedId){
+clientStream.on('subscribed' + uuid, function(subscribedId){
 	clientId = subscribedId.toString();
 	console.log('subscribeClient: ', clientId);
+	clientStream.on(clientId, function(id, tweetID, text, rt){
+
+		console.log('subscriptionId: ', clientId);
+			
+		if(Retweets.find().count() < numBars){
+			var isDuplicate = Retweets.findOne({tweetID: tweetID});
+			if( isDuplicate){
+				Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
+			} else {
+				Retweets.insert({
+					_id: id,
+					tweetID: tweetID,
+					text: text,
+					retweetCount: rt
+				});
+			}
+			
+			if( rt < min){
+				min = rt;
+				minIndex = id;
+			}
+
+		} else if(rt > min){
+			
+			removeMin(1);
+
+			var isDuplicate = Retweets.findOne({tweetID: tweetID});
+			
+			if(isDuplicate){
+				Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
+			} else {
+				Retweets.insert({
+					_id: id,
+					tweetID: tweetID,
+					text: text,
+					retweetCount: rt
+				});
+
+			}
+
+		}
+		
+		console.log(id, tweetID, text, rt);
+			//$('#copy, body').append('<h1>'+ dataset[0].text + '</h1>');
+	});
 });
 
-twitterStream.on(clientId, function(id, tweetID, text, rt) {
+function listenOn(clientId){
 
-	console.log('subscriptionId: ', clientId);
-		
-	if(Retweets.find().count() < numBars){
-		var isDuplicate = Retweets.findOne({tweetID: tweetID});
-		if( isDuplicate){
-			Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
-		} else {
-			Retweets.insert({
-				_id: id,
-				tweetID: tweetID,
-				text: text,
-				retweetCount: rt
-			});
+	clientStream.on(clientId, function(id, tweetID, text, rt){
+
+		console.log('subscriptionId: ', clientId);
+			
+		if(Retweets.find().count() < numBars){
+			var isDuplicate = Retweets.findOne({tweetID: tweetID});
+			if( isDuplicate){
+				Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
+			} else {
+				Retweets.insert({
+					_id: id,
+					tweetID: tweetID,
+					text: text,
+					retweetCount: rt
+				});
+			}
+			
+			if( rt < min){
+				min = rt;
+				minIndex = id;
+			}
+
+		} else if(rt > min){
+			
+			removeMin(1);
+
+			var isDuplicate = Retweets.findOne({tweetID: tweetID});
+			
+			if(isDuplicate){
+				Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
+			} else {
+				Retweets.insert({
+					_id: id,
+					tweetID: tweetID,
+					text: text,
+					retweetCount: rt
+				});
+
+			}
+
 		}
 		
-		if( rt < min){
-			min = rt;
-			minIndex = id;
-		}
+		console.log(id, tweetID, text, rt);
+			//$('#copy, body').append('<h1>'+ dataset[0].text + '</h1>');
+	});
+}
 
-	} else if(rt > min){
-		
-		removeMin(1);
-
-		var isDuplicate = Retweets.findOne({tweetID: tweetID});
-		
-		if(isDuplicate){
-			Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
-		} else {
-			Retweets.insert({
-				_id: id,
-				tweetID: tweetID,
-				text: text,
-				retweetCount: rt
-			});
-
-		}
-
-	}
-	
-	console.log(id, tweetID, text, rt);
-		//$('#copy, body').append('<h1>'+ dataset[0].text + '</h1>');
-});
 
 Template.barChart.rendered = function(){
 	//Width and height
@@ -292,7 +341,7 @@ Template.barChart.rendered = function(){
 
 Template.barChart.destroyed = function(){
 
-	twitterStream.emit('unsubscribe');
+	clientStream.emit('unsubscribe');
 
 	//Meteor.call('stopStream', function(error){
 	//	if(error){
