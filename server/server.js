@@ -26,6 +26,7 @@ serverStream.permissions.read(function(eventName) {
   return this.subscriptionId === eventName || eventName.indexOf('subscribed') > -1;
 });
 
+
 serverStream.on('unsubscribe', function(client){
   var self = this;
   if(client === self.subscriptionId){
@@ -53,11 +54,14 @@ serverStream.on('subscribeClient', function(track, language, tempId){
     }
   );
 
+  stream.on('error', function(error){
+    serverStream.emit('error', error);
+  })
+
 });
 
 function setListener(twt, client, track){
     if(twt.retweeted_status){
-
       serverStream.emit(client, track, twt.id_str, twt.retweeted_status.id_str, twt.text, twt.retweeted_status.retweet_count);
     }
 }
@@ -71,7 +75,7 @@ function addToTrack(subscriber, track){
 function updateTwit(){
   var now = Date.now(),
     updated = false;
-  console.log('now: ', Date.now().toString());
+  console.log('now: ', now, ' lastUpdated: ', lastUpdated);
 
   if(now - lastUpdated > 5 && rateLimit === false){
 

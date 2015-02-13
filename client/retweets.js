@@ -61,6 +61,10 @@ clientStream.on('subscribed' + uuid, function(subscribedId){
 	listenOn(clientId);
 });
 
+clientStream.on('error', function(error){
+	console.log('error from server: ', error);
+})
+
 function listenOn(clientId){
 
 	clientStream.on(clientId, function(track, id, tweetID, text, rt){
