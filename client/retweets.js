@@ -1,6 +1,7 @@
 var Retweets = new Mongo.Collection(null),
 	clientStream = new Meteor.Stream('clientStream'),
-	clientId;
+	clientId = null,
+	input = null;
 
 function generateUUID() {
     var d = new Date().getTime();
@@ -19,27 +20,12 @@ Template.body.events({
 		
 		event.preventDefault();
 		
-		var input = event.target.track.value;
+		input = event.target.track.value;
 		console.log('input: ', input);
-		
-		//Meteor.call('stopStream', function(error){
-		//	if(error){
-		//		console.log(error);
-		//	}
-		//});
 
-		clientStream.emit('unsubscribe');
+		clientStream.emit('unsubscribe', clientId);
 
 		Retweets.remove({});
-		//console.log('Retweets', Retweets.find({}).fetch());
-		
-		//Meteor.call('startStream', input, 'en', function(error, result){
-		//	if(error){
-		//		console.log(error);
-		//	} else if(result){
-		//		console.log(result);
-		//	}
-		//});
 
 		clientStream.emit('subscribeClient', input, 'en', uuid);
 		
@@ -71,99 +57,53 @@ function removeMin(numToRemove){
 clientStream.on('subscribed' + uuid, function(subscribedId){
 	clientId = subscribedId.toString();
 	console.log('subscribeClient: ', clientId);
-	clientStream.on(clientId, function(id, tweetID, text, rt){
 
-		console.log('subscriptionId: ', clientId);
-			
-		if(Retweets.find().count() < numBars){
-			var isDuplicate = Retweets.findOne({tweetID: tweetID});
-			if( isDuplicate){
-				Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
-			} else {
-				Retweets.insert({
-					_id: id,
-					tweetID: tweetID,
-					text: text,
-					retweetCount: rt
-				});
-			}
-			
-			if( rt < min){
-				min = rt;
-				minIndex = id;
-			}
-
-		} else if(rt > min){
-			
-			removeMin(1);
-
-			var isDuplicate = Retweets.findOne({tweetID: tweetID});
-			
-			if(isDuplicate){
-				Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
-			} else {
-				Retweets.insert({
-					_id: id,
-					tweetID: tweetID,
-					text: text,
-					retweetCount: rt
-				});
-
-			}
-
-		}
-		
-		console.log(id, tweetID, text, rt);
-			//$('#copy, body').append('<h1>'+ dataset[0].text + '</h1>');
-	});
+	listenOn(clientId);
 });
 
 function listenOn(clientId){
 
-	clientStream.on(clientId, function(id, tweetID, text, rt){
+	clientStream.on(clientId, function(track, id, tweetID, text, rt){
 
-		console.log('subscriptionId: ', clientId);
-			
-		if(Retweets.find().count() < numBars){
-			var isDuplicate = Retweets.findOne({tweetID: tweetID});
-			if( isDuplicate){
-				Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
-			} else {
-				Retweets.insert({
-					_id: id,
-					tweetID: tweetID,
-					text: text,
-					retweetCount: rt
-				});
+		if( track === input){
+			if(Retweets.find().count() < numBars){
+				var isDuplicate = Retweets.findOne({tweetID: tweetID});
+				if( isDuplicate){
+					Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
+				} else {
+					Retweets.insert({
+						_id: id,
+						tweetID: tweetID,
+						text: text,
+						retweetCount: rt
+					});
+				}
+				
+				if( rt < min){
+					min = rt;
+					minIndex = id;
+				}
+
+			} else if(rt > min){
+				
+				removeMin(1);
+
+				var isDuplicate = Retweets.findOne({tweetID: tweetID});
+				
+				if(isDuplicate){
+					Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
+				} else {
+					Retweets.insert({
+						_id: id,
+						tweetID: tweetID,
+						text: text,
+						retweetCount: rt
+					});
+
+				}
+
 			}
-			
-			if( rt < min){
-				min = rt;
-				minIndex = id;
-			}
-
-		} else if(rt > min){
-			
-			removeMin(1);
-
-			var isDuplicate = Retweets.findOne({tweetID: tweetID});
-			
-			if(isDuplicate){
-				Retweets.update({_id: isDuplicate._id}, {$set: {retweetCount: rt}});
-			} else {
-				Retweets.insert({
-					_id: id,
-					tweetID: tweetID,
-					text: text,
-					retweetCount: rt
-				});
-
-			}
-
 		}
-		
-		console.log(id, tweetID, text, rt);
-			//$('#copy, body').append('<h1>'+ dataset[0].text + '</h1>');
 	});
 }
 

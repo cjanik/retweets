@@ -28,12 +28,14 @@ serverStream.permissions.read(function(eventName) {
   return this.subscriptionId === eventName || eventName.indexOf('subscribed') > -1;
 });
 
-serverStream.on('unsubscribe', function(){
-  //console.log('unsubscribe: ', this.subscriptionId);
+serverStream.on('unsubscribe', function(client){
   var self = this;
-  console.log('channels before: ', channels);
+  if(client === self.subscriptionId){
+    console.log('clientCheck: ', client);
+    stream.removeListener('channels/' + client, setListener);
+  }
+
   delete channels[self.subscriptionId];
-  console.log('channels after: ', channels);
 });
 
 serverStream.on('subscribeClient', function(track, language, tempId){
@@ -49,14 +51,18 @@ serverStream.on('subscribeClient', function(track, language, tempId){
   addToTrack(subId, track);
 
   stream.on('channels/' + subId, function(twt){
-    if(twt.retweeted_status){
-      //console.log(twt);
-      serverStream.emit(subId, twt.id_str, twt.retweeted_status.id_str, twt.text, twt.retweeted_status.retweet_count);
+    setListener( twt, subId, track);
     }
-  });
+  );
 
 });
 
+function setListener(twt, client, track){
+    if(twt.retweeted_status){
+      //console.log(twt);
+      serverStream.emit(client, track, twt.id_str, twt.retweeted_status.id_str, twt.text, twt.retweeted_status.retweet_count);
+    }
+}
 
 function addToTrack(subscriber, track){
   channels[subscriber] = Array(track);
@@ -67,8 +73,7 @@ function addToTrack(subscriber, track){
 function updateTwit(){
   var now = Date.now(),
     updated = false;
-
-  console.log('updateTwit');
+  console.log('now: ', Date.now().toString());
 
   if(now - lastUpdated > 5 && rateLimit === false){
     //Meteor.call('startStream');
