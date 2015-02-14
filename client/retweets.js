@@ -20,19 +20,22 @@ Template.body.events({
 		
 		event.preventDefault();
 		
-		input = event.target.track.value;
-		console.log('input: ', input);
+		input = event.target.track.value.trim();
 
-		clientStream.emit('unsubscribe', clientId);
+		if(input != ''){
+			clientStream.emit('unsubscribe', clientId);
 
-		Retweets.remove({});
+			Retweets.remove({});
 
-		clientStream.emit('subscribeClient', input, 'en', uuid);
-		
-		event.target.track.value = '';
-		
-		document.getElementById('tweet-view').innerHTML =
-			"<p>not seeing much? someone is bound to tweet about it eventually!</p><p>click a bar to see the tweet</p>";
+			clientStream.emit('subscribeClient', input, 'en', uuid);
+			
+			event.target.track.value = '';
+			
+			document.getElementById('tweet-view').innerHTML =
+				"<p>not seeing much? someone is bound to tweet about it eventually!</p><p>click a bar to see the tweet</p>";
+		} else {
+			console.log('Need to enter a proper search term');
+		}
 		
 		return false;
 	}
@@ -55,9 +58,8 @@ function removeMin(numToRemove){
 };
 
 clientStream.on('subscribed' + uuid, function(subscribedId){
-	clientId = subscribedId.toString();
-	console.log('subscribeClient: ', clientId);
 
+	clientId = subscribedId.toString();
 	listenOn(clientId);
 });
 
@@ -103,9 +105,7 @@ function listenOn(clientId){
 						text: text,
 						retweetCount: rt
 					});
-
 				}
-
 			}
 		}
 	});
@@ -170,9 +170,6 @@ Template.barChart.rendered = function(){
 		
 		//var dataset = _.pluck(Retweets.find({}, {retweetCount: 1}).fetch(), 'retweetCount');
 		var dataset = Retweets.find({}, {retweetCount: 1}).fetch();
-		console.log('dataset:',dataset);
-		
-	
 		
 		//Update scale domains
 		xScale.domain(d3.range(dataset.length));
@@ -285,11 +282,6 @@ Template.barChart.rendered = function(){
 
 Template.barChart.destroyed = function(){
 
-	clientStream.emit('unsubscribe');
+	clientStream.emit('unsubscribe', clientId);
 
-	//Meteor.call('stopStream', function(error){
-	//	if(error){
-	//		console.log(error);
-	//	}
-	//});
 };

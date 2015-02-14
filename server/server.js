@@ -23,7 +23,7 @@ serverStream.permissions.write(function(eventName) {
 
 serverStream.permissions.read(function(eventName) {
 
-  return this.subscriptionId === eventName || eventName.indexOf('subscribed') > -1;
+  return this.subscriptionId === eventName || eventName.indexOf('subscribed') > -1 || eventName === 'error';
 });
 
 
@@ -32,9 +32,8 @@ serverStream.on('unsubscribe', function(client){
   if(client === self.subscriptionId){
     console.log('clientCheck: ', client);
     stream.removeListener('channels/' + client, setListener);
+    delete channels[self.subscriptionId];
   }
-
-  delete channels[self.subscriptionId];
 });
 
 serverStream.on('subscribeClient', function(track, language, tempId){
@@ -56,7 +55,8 @@ serverStream.on('subscribeClient', function(track, language, tempId){
 
   stream.on('error', function(error){
     serverStream.emit('error', error);
-  })
+    console.log('error: ', error);
+  });
 
 });
 
@@ -77,13 +77,13 @@ function updateTwit(){
     updated = false;
   console.log('now: ', now, ' lastUpdated: ', lastUpdated);
 
-  if(now - lastUpdated > 5 && rateLimit === false){
+  if(now - lastUpdated > 5000 && rateLimit === false){
 
     stream = Twit.streamChannels( {track: channels, language: lang} );
     console.log('updated, no rateLimit: ', now - lastUpdated);
     lastUpdated = now;
     updated = true;
-  } else if(rateLimit === true && now - lastUpdated > 60){
+  } else if(rateLimit === true && now - lastUpdated > 60000){
 
     stream = Twit.streamChannels( {track: channels, language: lang} );
     console.log('updated, after rateLimit', now - lastUpdated);
@@ -93,7 +93,7 @@ function updateTwit(){
   }
 
   if(!updated){
-    Meteor.setTimeout(updateTwit, 5);
+    Meteor.setTimeout(updateTwit, 1000);
   } else{
     return true;
   }
